@@ -1,5 +1,11 @@
 import { Booking, Room } from '@/data/campus';
-import { MINUTES_IN_DAY } from './time';
+import {
+  validateIntervalBounds,
+  validateMaxDuration,
+  validateNoOverlap,
+  validateRoomNotBlocked,
+  validateStartInFuture,
+} from './validation';
 
 export type Verdict =
   | { status: 'available'; room: Room; start: number; end: number }
@@ -14,46 +20,17 @@ export function checkAvailability(
 ): Verdict {
   if (!room) return { status: 'unavailable', reason: 'Please select a room.' };
 
-  // AC1: interval bounds and ordering
-  if (start < 0 || end > MINUTES_IN_DAY || start >= end) {
-    return {
-      status: 'unavailable',
-      reason: 'Interval must satisfy 0 ≤ start < end ≤ 1440 minutes.',
-    };
-  }
-  if (start <= currentTime) {
-    return {
-      status: 'unavailable',
-      reason: 'Start time must be after the current time.',
-    };
-  }
+  const checks: Array<() => { reason: string } | null> = [
+    () => validateIntervalBounds(start, end),
+    () => validateStartInFuture(start, currentTime),
+    () => validateMaxDuration(start, end),
+    () => validateRoomNotBlocked(room),
+    () => validateNoOverlap(room, start, end, existing),
+  ];
 
-  // AC2: max 120 minutes
-  if (end - start > 120) {
-    return {
-      status: 'unavailable',
-      reason: 'Bookings may not exceed 120 minutes.',
-    };
-  }
-
-  // AC3: blocked room
-  if (room.blocked) {
-    return {
-      status: 'unavailable',
-      reason: `Room is blocked: ${room.blockedReason ?? 'unavailable'}.`,
-    };
-  }
-
-  // AC4: overlap check (touching endpoints allowed)
-  const roomBookings = existing.filter((b) => b.roomCode === room.code);
-  const conflict = roomBookings.find(
-    (b) => start < b.end && end > b.start
-  );
-  if (conflict) {
-    return {
-      status: 'unavailable',
-      reason: `Overlaps an existing booking (${conflict.bookedBy}: ${conflict.purpose}).`,
-    };
+  for (const check of checks) {
+    const issue = check();
+    if (issue) return { status: 'unavailable', reason: issue.reason };
   }
 
   return { status: 'available', room, start, end };
