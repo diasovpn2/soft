@@ -3,7 +3,8 @@
 ## AI tool and model used
 
 - **Tool:** Bolt (bolt.new) — AI-powered web development environment
-- **Model:** Claude (Anthropic) — accessed via the Bolt assistant
+- **Model:** The exact model was not recorded. The Bolt interface did not
+  display or confirm a specific model name during this session.
 
 ## Date of use
 
@@ -60,19 +61,20 @@
 
 ## Suggestions rejected or modified
 
-1. **Installing `@testing-library/react` and `jsdom` for a UI rendering test
-   (F5).** Rejected. The assignment said "do not install new dependencies
-   without explaining why they are necessary." The existing Vitest `node`
-   environment was sufficient for integration tests that verify the
-   `checkAvailability` pipeline produces room-specific results. Adding
-   `@testing-library/react` + `jsdom` would have been a larger change better
-   deferred to a future improvement. The documentation explicitly states that
-   no UI rendering test exists.
+No AI-suggested approach was explicitly rejected or overturned during
+implementation. The following were constraint-driven decisions, not rejected
+AI proposals:
 
-2. **Splitting `App.tsx` into sub-components during Task 02.** Not done. The
-   assignment required "minimal changes," so the room-finder UI was added to
-   the existing component rather than refactoring it. This is noted as a
-   remaining limitation and a prioritized future improvement.
+1. **Not installing `@testing-library/react` and `jsdom` for UI rendering
+   tests.** This was a decision made during Task 04 to comply with the
+   assignment's instruction to avoid new dependencies without justification.
+   The existing Vitest `node` environment was sufficient for integration
+   tests. No AI proposal to install these libraries was made and then
+   rejected.
+
+2. **Not splitting `App.tsx` into sub-components during Task 02.** This was
+   driven by the assignment's "minimal changes" requirement, not by rejecting
+   an AI suggestion.
 
 ## Problems discovered
 
@@ -82,9 +84,12 @@
    replaced with an import of `MAX_BOOKING_DURATION` from `validation.ts`.
 
 2. **`AGENTS.md` / `1.md` not found.** The documentation prompt instructed
-   reading these files. A recursive glob of `/home/project` found no such
-   files. The inspected directory was `/home/project` (including `src/`,
-   `src/lib/`, `src/data/`). This is reported here as required.
+   reading these files. A search of `/home/project` (the Linux build
+   environment used by Bolt) found no such files. **Limitation:** this search
+   only covers the Bolt build environment, not the original Windows project
+   directory. The absence of these files here does not prove they do not exist
+   in the original project. If the original project directory is accessible
+   elsewhere, it should be checked separately.
 
 3. **`Room` interface change required updating existing test fixtures.** Adding
    `equipment: string[]` to `Room` made the two inline `Room` fixtures in
@@ -117,8 +122,9 @@ source code was modified during the documentation task.
 
 ## How changes were verified
 
-All four quality gates were run after Task 02 and again after Task 04. The
-results below are from the final run after Task 04 (verified, not invented):
+All four quality gates were run after Task 02, again after Task 04, and again
+during this documentation review. The results below are from the final run on
+2026-11-08 (verified, not invented):
 
 | Command | Result |
 |---|---|
@@ -142,3 +148,41 @@ Test breakdown (verified output):
 Baseline comparison (from `BASELINE.md`, recorded 2026-11-08 before
 Assignment #04): 29 tests across 2 files. After: 57 tests across 4 files. No
 existing tests were removed or weakened.
+
+## AI Reflection
+
+The AI was provided with the full Smart Campus codebase — all source files
+under `src/`, the existing test suite, `BASELINE.md`, and detailed task
+specifications for Assignment #04. The context included the existing AC1–AC6
+validation logic and the requirement to preserve it while adding filtering
+features and tests.
+
+The most useful AI suggestions were structural: separating filtering logic
+into `src/lib/filtering.ts` matched the existing pure-function architecture
+and made the new functions independently testable. Composing
+`filterAvailableRooms` from three sub-filters proved valuable when writing
+boundary tests independently. The AI also identified and resolved the
+`MAX_DURATION` constant duplication between `App.tsx` and `validation.ts`.
+
+No AI suggestion was factually incorrect, but the initial documentation
+contained errors that required correction: it stated the model was Claude
+(unconfirmed by the Bolt interface), miscounted source files (12 instead of
+13), and misstated the `App.tsx` line count (430 instead of the verified
+493). These were corrected by re-running `find` and `wc -l`.
+
+I personally verified all generated code by running the four quality gates
+after each task and re-reading the modified files. I checked that no existing
+tests were removed or weakened, that fixture data was not mutated, and that
+the test count matched the actual `vitest run` output.
+
+Testing influenced development by catching the fixture-type incompatibility
+early: adding `equipment: string[]` to `Room` caused `validation.test.ts`
+fixtures to fail type-checking, which was fixed before proceeding. Writing
+filtering tests alongside the functions confirmed boundary behavior before
+the UI consumed them.
+
+What I would improve next: split `App.tsx` into focused components
+(`RoomFinder`, `AvailabilityForm`, `VerdictCard`, `BookingsList`) to enable
+component-level testing, then add `@testing-library/react` with `jsdom` to
+verify the F5 verdict-refresh through an actual render. Adding CI and
+coverage reporting would further protect against regressions.

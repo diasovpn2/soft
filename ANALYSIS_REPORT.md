@@ -47,11 +47,16 @@ logic-layer module imports React or depends on the UI.
 
 ### Original acceptance criteria (AC1–AC6)
 
-These criteria were defined before Assignment #04 and are preserved unchanged.
+No original assignment specification document is present in the repository.
+The AC1–AC6 descriptions below are derived from the test assertions and code
+comments in `src/lib/availability.test.ts` and `src/lib/validation.test.ts`,
+which were written before Assignment #04 and are preserved unchanged. If the
+original assignment text differs from these interpretations, the original text
+takes precedence.
 
-| Criterion | Description |
+| Criterion | Description (derived from existing test code) |
 |---|---|
-| AC1 | Interval must satisfy 0 ≤ start < end ≤ 1440 minutes, and start must be strictly after the current time. |
+| AC1 | Interval must satisfy 0 ≤ start < end ≤ 1440 minutes, and the proposed start must be strictly after the current time. |
 | AC2 | Bookings may not exceed 120 minutes. |
 | AC3 | A blocked room must be rejected regardless of the time slot. |
 | AC4 | Overlapping bookings must be rejected; bookings touching only at endpoints are allowed. |
@@ -60,10 +65,10 @@ These criteria were defined before Assignment #04 and are preserved unchanged.
 
 ### Maintainability risks
 
-1. **`src/App.tsx` is a single 430-line component** (after Task 02 additions)
-   that handles room-finder state, form state, verdict rendering, and the
-   bookings list. It violates the Single Responsibility Principle and is hard
-   to unit-test. Splitting into `RoomFinder`, `AvailabilityForm`, `VerdictCard`,
+1. **`src/App.tsx` is a single 493-line component** (verified by `wc -l`) that
+   handles room-finder state, form state, verdict rendering, and the bookings
+   list. It violates the Single Responsibility Principle and is hard to
+   unit-test. Splitting into `RoomFinder`, `AvailabilityForm`, `VerdictCard`,
    and `BookingsList` components would improve testability and readability.
 
 2. **No UI/component tests exist.** All 57 tests run in the `node` environment
@@ -82,29 +87,45 @@ These criteria were defined before Assignment #04 and are preserved unchanged.
 | Priority | Improvement | Rationale |
 |---|---|---|
 | 1 | Add a CI workflow that runs `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build` on every push | Prevents regressions from reaching the main branch; highest leverage, lowest effort |
-| 2 | Split `App.tsx` into focused components (`RoomFinder`, `AvailabilityForm`, `VerdictCard`, `BookingsList`) | Reduces the 430-line monolith; enables component-level testing; improves readability |
+| 2 | Split `App.tsx` into focused components (`RoomFinder`, `AvailabilityForm`, `VerdictCard`, `BookingsList`) | Reduces the 493-line monolith; enables component-level testing; improves readability |
 | 3 | Add `@testing-library/react` + `jsdom` and write component tests for the room-finder and verdict-refresh behavior | Currently F5's UI behavior is inferred from logic tests, not verified by rendering |
 | 4 | Install `@vitest/coverage-v8` and add a coverage threshold | Ensures new code stays tested; surfaces untested branches |
 
 ### AI suggestion that was rejected or modified
 
-**Suggestion (Task 04):** The AI initially considered installing
-`@testing-library/react` and `jsdom` to write a true UI rendering test for F5
-(room-switch refreshing the verdict).
-
-**Decision:** Rejected for this task. The assignment required "at least one
-integration or UI behavior test" but also said "do not install new
+During Task 04, a decision was made not to install `@testing-library/react`
+and `jsdom` to write a UI rendering test for F5. The assignment required "at
+least one integration or UI behavior test" and also said "do not install new
 dependencies without explaining why they are necessary." The existing Vitest
-`node` environment was sufficient to write integration tests that exercise the
-full `checkAvailability` pipeline with seed booking data, proving that
-switching rooms produces different results based on each room's own bookings.
-Installing `@testing-library/react` + `jsdom` would have been a larger change
-better deferred to the CI/component-split improvement (priority 3 above). The
-documentation explicitly states that no UI rendering test exists.
+`node` environment was sufficient for integration tests that exercise the full
+`checkAvailability` pipeline, proving that switching rooms produces different
+results based on each room's own bookings. Adding `@testing-library/react` +
+`jsdom` was deferred to the improvement plan (priority 3 above). This is a
+constraint-driven decision, not a rejected AI proposal — no AI-suggested
+alternative was overturned during implementation.
 
 ---
 
 ## Task 03: Architecture before and after refactoring
+
+### What was completed
+
+Assignment #04 completed the **separation of filtering logic** from the UI.
+A new module `src/lib/filtering.ts` was created with four pure functions
+(`filterByCapacity`, `filterByEquipment`, `excludeBlockedRooms`,
+`filterAvailableRooms`) that are independently unit-tested (18 tests in
+`filtering.test.ts`). This follows the existing architecture pattern where
+all logic lives in `src/lib/` as pure functions and the UI only calls them.
+
+### What was not completed
+
+The **UI component refactoring** of `src/App.tsx` was not done. Task 02 added
+the room-finder UI (attendees input, equipment toggle chips, matching-room
+cards, empty state) and the verdict-refresh `useEffect` to the existing
+single component rather than splitting it into sub-components. This was a
+deliberate choice to keep changes minimal as required by the assignment, but
+`App.tsx` remains a 493-line monolith. This is listed as a remaining
+limitation and as priority 2 in the improvement plan.
 
 ### Architecture before (baseline)
 
@@ -116,9 +137,9 @@ Before Assignment #04, the project had:
 - `src/lib/validation.ts` — 5 validation functions (AC1–AC4) +
   `MAX_BOOKING_DURATION` constant.
 - `src/lib/availability.ts` — `checkAvailability` composing the rules.
-- `src/App.tsx` (319 lines) — a single component with a room dropdown, time
-  inputs, a verdict panel, and a bookings list. No room-finder, no equipment
-  filtering, no capacity filtering.
+- `src/App.tsx` (319 lines per `BASELINE.md`) — a single component with a room
+  dropdown, time inputs, a verdict panel, and a bookings list. No room-finder,
+  no equipment filtering, no capacity filtering.
 - Tests: 29 tests across 2 files (`validation.test.ts`, `availability.test.ts`),
   all in the `node` environment.
 
@@ -130,11 +151,12 @@ After Assignment #04 (Tasks 02 and 04):
   `EquipmentOption` type and `EQUIPMENT_OPTIONS` constant; all 4 rooms have
   equipment data.
 - `src/lib/filtering.ts` (new) — 4 pure filtering functions.
-- `src/App.tsx` (430 lines) — added a "Find a room" panel (attendees input +
-  equipment toggle chips + matching-room cards + empty state), equipment tags
-  on selected-room detail, and a `useEffect` that clears the verdict when the
-  selected room changes. Replaced the duplicated `MAX_DURATION` local constant
-  with an import of `MAX_BOOKING_DURATION` from `validation.ts`.
+- `src/App.tsx` (493 lines, verified by `wc -l`) — added a "Find a room" panel
+  (attendees input + equipment toggle chips + matching-room cards + empty
+  state), equipment tags on selected-room detail, and a `useEffect` that clears
+  the verdict when the selected room changes. Replaced the duplicated
+  `MAX_DURATION` local constant with an import of `MAX_BOOKING_DURATION` from
+  `validation.ts`.
 - Tests: 57 tests across 4 files (added `filtering.test.ts` with 18 tests and
   `integration.test.ts` with 10 tests).
 
@@ -167,11 +189,16 @@ After Assignment #04 (Tasks 02 and 04):
 
 ### Before/after quality comparison
 
+**Counting method:** All `.ts`, `.tsx`, and `.css` files under `src/`,
+including test files. Counts verified by `find /home/project/src -type f`
+on 2026-11-08.
+
 | Metric | Before (baseline) | After (current) |
 |---|---|---|
-| Source files under `src/` | 10 | 12 (added `filtering.ts`, `filtering.test.ts`, `integration.test.ts`; `campus.ts` extended) |
+| Total files under `src/` | 10 | 13 |
+| Source files (non-test) | 8 | 9 (`filtering.ts` added) |
+| Test files | 2 | 4 (`filtering.test.ts`, `integration.test.ts` added) |
 | Total tests | 29 | 57 |
-| Test files | 2 | 4 |
 | `MAX_DURATION` duplication | Yes (`App.tsx` line 19 + `validation.ts` line 4) | No (consolidated — `App.tsx` imports `MAX_BOOKING_DURATION`) |
 | Equipment field on `Room` | No | Yes (`equipment: string[]`) |
 | Capacity filtering | No | Yes (`filterByCapacity`) |
@@ -185,14 +212,22 @@ After Assignment #04 (Tasks 02 and 04):
 | Lint | PASS | PASS |
 | Build | PASS (1572 modules) | PASS (1573 modules) |
 
+Baseline file list (10): `App.tsx`, `main.tsx`, `index.css`, `vite-env.d.ts`,
+`campus.ts`, `availability.ts`, `availability.test.ts`, `validation.ts`,
+`validation.test.ts`, `time.ts`.
+
+Current file list (13): the 10 above plus `filtering.ts`,
+`filtering.test.ts`, `integration.test.ts`. `campus.ts` was extended, not
+added.
+
 ### Remaining limitations
 
 - **No UI/component tests.** The F5 room-switch behavior is verified through
   integration tests of `checkAvailability`, not by rendering the React
   component. The `useEffect` that clears the verdict is not directly tested.
-- **`App.tsx` remains a single 430-line component.** Task 02 added the
+- **`App.tsx` remains a single 493-line component.** Task 02 added the
   room-finder UI to the existing monolith rather than splitting it, to keep
-  changes minimal as required.
+  changes minimal as required. UI component refactoring was not completed.
 - **No CI configuration.** Quality gates must be run manually.
 - **No coverage reporting.** `@vitest/coverage-v8` is not installed.
 - **All data is in-memory seed data.** No persistence across page reloads.
