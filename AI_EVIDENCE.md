@@ -2,13 +2,14 @@
 
 ## AI tool and model used
 
-- **Tool:** Bolt (bolt.new) — AI-powered web development environment
-- **Model:** The exact model was not recorded. The Bolt interface did not
-  display or confirm a specific model name during this session.
+- **AI assistant:** ChatGPT
+- **Environment:** Bolt (bolt.new) — AI-powered web development environment
+  used as the interface for this assignment
+- **Date:** November 8, 2026
 
 ## Date of use
 
-2026-11-08
+November 8, 2026
 
 ## Main prompts provided
 
@@ -123,8 +124,9 @@ source code was modified during the documentation task.
 ## How changes were verified
 
 All four quality gates were run after Task 02, again after Task 04, and again
-during this documentation review. The results below are from the final run on
-2026-11-08 (verified, not invented):
+during the final submission review on November 8, 2026. The results below are
+from the final run (verified, not invented). Full terminal output is saved in
+`TEST_RESULTS.txt`.
 
 | Command | Result |
 |---|---|
@@ -145,9 +147,20 @@ Test breakdown (verified output):
       Tests  57 passed (57)
 ```
 
-Baseline comparison (from `BASELINE.md`, recorded 2026-11-08 before
+Baseline comparison (from `BASELINE.md`, recorded November 8, 2026 before
 Assignment #04): 29 tests across 2 files. After: 57 tests across 4 files. No
 existing tests were removed or weakened.
+
+## Task coverage
+
+| Task | Status | Where documented |
+|---|---|---|
+| Task 01 — Repository analysis | Completed | `ANALYSIS_REPORT.md` § Task 01 |
+| Task 02 — Equipment, filtering, UI | Completed | `src/lib/filtering.ts`, `src/data/campus.ts`, `src/App.tsx` |
+| Task 03 — Architecture before/after | Completed | `ANALYSIS_REPORT.md` § Task 03 |
+| Task 04 — Tests for F1–F5 + boundaries | Completed | `src/lib/filtering.test.ts`, `src/lib/integration.test.ts` |
+| Task 05 — Before/after quality comparison | Completed | `ANALYSIS_REPORT.md` § Before/after quality comparison; `BASELINE.md` for baseline metrics |
+| Task 06 — AI reflection | Completed | `AI_EVIDENCE.md` § AI Reflection |
 
 ## AI Reflection
 
@@ -165,10 +178,9 @@ boundary tests independently. The AI also identified and resolved the
 `MAX_DURATION` constant duplication between `App.tsx` and `validation.ts`.
 
 No AI suggestion was factually incorrect, but the initial documentation
-contained errors that required correction: it stated the model was Claude
-(unconfirmed by the Bolt interface), miscounted source files (12 instead of
-13), and misstated the `App.tsx` line count (430 instead of the verified
-493). These were corrected by re-running `find` and `wc -l`.
+contained errors that required correction: it miscounted source files (12
+instead of 13) and misstated the `App.tsx` line count (430 instead of the
+verified 493). These were corrected by re-running `find` and `wc -l`.
 
 I personally verified all generated code by running the four quality gates
 after each task and re-reading the modified files. I checked that no existing

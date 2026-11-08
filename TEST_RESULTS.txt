@@ -1,0 +1,62 @@
+================================================================
+TEST_RESULTS.txt — Software Engineering Assignment #04
+Date: 2026-11-08
+Project: Smart Campus Room Availability
+================================================================
+
+========== npm test ==========
+
+> vite-react-typescript-starter@0.0.0 test
+> vitest run
+
+
+ RUN  v2.1.9 /home/project
+
+ ✓ src/lib/filtering.test.ts (18 tests) 7ms
+ ✓ src/lib/availability.test.ts (15 tests) 5ms
+ ✓ src/lib/integration.test.ts (10 tests) 4ms
+ ✓ src/lib/validation.test.ts (14 tests) 5ms
+
+ Test Files  4 passed (4)
+      Tests  57 passed (57)
+   Start at  16:34:42
+   Duration  834ms (transform 102ms, setup 0ms, collect 129ms, tests 21ms, environment 0ms, prepare 152ms)
+
+
+========== npm run typecheck ==========
+
+> vite-react-typescript-starter@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.app.json
+
+
+========== npm run lint ==========
+
+> vite-react-typescript-starter@0.0.0 lint
+> eslint .
+
+
+========== npm run build ==========
+
+> vite-react-typescript-starter@0.0.0 build
+> vite build
+
+vite v5.4.8 building for production...
+transforming...
+Browserslist: caniuse-lite is outdated. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 1573 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.70 kB │ gzip:  0.38 kB
+dist/assets/index-CV8k0Xlr.css   12.64 kB │ gzip:  3.17 kB
+dist/assets/index-CRTo-0mM.js   159.90 kB │ gzip: 50.68 kB
+✓ built in 1.89s
+
+================================================================
+SUMMARY
+================================================================
+Tests: 57 passed (4 files)
+Typecheck: PASS (exit 0)
+Lint: PASS (exit 0)
+Build: PASS (exit 0, 1573 modules transformed)

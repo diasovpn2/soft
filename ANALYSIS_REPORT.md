@@ -45,6 +45,125 @@ Dependencies flow strictly downward: `App.tsx` → `availability.ts` /
 `filtering.ts` → `validation.ts` / `time.ts` → `campus.ts` (types only). No
 logic-layer module imports React or depends on the UI.
 
+### Architecture diagram — before (baseline)
+
+```
+┌─────────────────────────────────────────────────┐
+│                  App.tsx (319 lines)             │
+│  ┌─────────┐  ┌──────────┐  ┌────────────────┐  │
+│  │  Room    │  │  Time    │  │    Verdict     │  │
+│  │ dropdown │  │  inputs  │  │    panel       │  │
+│  └────┬─────┘  └────┬─────┘  └────────┬───────┘  │
+│       │              │                  │         │
+└───────┼──────────────┼──────────────────┼────────┘
+        │              │                  │
+        ▼              ▼                  ▼
+┌──────────────┐ ┌───────────┐ ┌──────────────────┐
+│ availability │ │   time    │ │   validation     │
+│     .ts      │ │   .ts     │ │      .ts         │
+│  checkAvail  │ │  time↔min │ │  5 validators    │
+└──────┬───────┘ └───────────┘ │  MAX_BOOKING_DUR │
+       │                      └────────┬─────────┘
+       ▼                               │
+┌──────────────┐                       │
+│  campus.ts   │◄──────────────────────┘
+│  Room, Booking│
+│  seed data    │
+└──────────────┘
+
+Tests: 29 (2 files, node env, no UI tests)
+```
+
+### Architecture diagram — after (current)
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                   App.tsx (493 lines)                        │
+│  ┌────────────┐  ┌─────────┐  ┌──────────┐  ┌────────────┐  │
+│  │  Room      │  │  Time   │  │ Verdict  │  │  Bookings  │  │
+│  │  Finder    │  │ inputs  │  │  panel   │  │    list    │  │
+│  │ (attendees,│  └────┬────┘  └────┬─────┘  └─────┬──────┘  │
+│  │ equipment, │       │            │              │          │
+│  │  cards)    │       │            │              │          │
+│  └─────┬──────┘       │            │              │          │
+│        │              │            │              │          │
+└────────┼──────────────┼────────────┼──────────────┼──────────┘
+         │              │            │              │
+         ▼              ▼            ▼              ▼
+┌──────────────┐ ┌───────────┐ ┌──────────────┐ ┌───────────┐
+│  filtering   │ │   time    │ │ availability │ │  campus   │
+│    .ts       │ │   .ts     │ │     .ts      │ │  .ts      │
+│ filterByCap  │ │  time↔min │ │  checkAvail  │ │ Room,     │
+│ filterByEquip│ └───────────┘ └──────┬───────┘ │ Booking,  │
+│ excludeBlock│                      │          │ Equipment │
+│ filterAvail │                      ▼          │ seed data │
+└──────┬───────┘               ┌──────────────┐ └─────┬─────┘
+       │                       │ validation   │       │
+       └──────────────────────►│    .ts       │◄──────┘
+                               │ 5 validators │
+                               │ MAX_BOOKING  │
+                               └──────┬───────┘
+                                      │
+                                      ▼
+                               ┌──────────────┐
+                               │  campus.ts   │
+                               └──────────────┘
+
+Tests: 57 (4 files, node env, no UI tests)
+New: filtering.ts, filtering.test.ts, integration.test.ts
+```
+
+### Repository map
+
+**Counting method:** All files under `src/` with extensions `.ts`, `.tsx`, or
+`.css`, including test files. Config and documentation files in the project
+root are listed separately. Excludes `node_modules/` and `dist/`.
+
+**Source and test files under `src/` (13 files, 1317 lines):**
+
+| File | Lines | Type | Purpose |
+|---|---|---|---|
+| `src/App.tsx` | 493 | Source | Main UI: room finder, availability form, verdict, bookings list |
+| `src/main.tsx` | 10 | Source | React DOM entry point |
+| `src/index.css` | 3 | Source | Tailwind CSS directives |
+| `src/vite-env.d.ts` | 1 | Source | Vite client type declarations |
+| `src/data/campus.ts` | 103 | Source | Room, Booking, EquipmentOption types; seed data; EQUIPMENT_OPTIONS |
+| `src/lib/time.ts` | 24 | Source | timeToMinutes, minutesToTime, nowHHMM, MINUTES_IN_DAY |
+| `src/lib/validation.ts` | 62 | Source | 5 validation functions (AC1–AC4), MAX_BOOKING_DURATION |
+| `src/lib/availability.ts` | 37 | Source | checkAvailability — composes validation into Verdict |
+| `src/lib/filtering.ts` | 33 | Source | filterByCapacity, filterByEquipment, excludeBlockedRooms, filterAvailableRooms |
+| `src/lib/validation.test.ts` | 121 | Test | 14 tests — AC1–AC4 validation unit tests |
+| `src/lib/availability.test.ts` | 126 | Test | 15 tests — AC1–AC6 composite + fixture immutability |
+| `src/lib/filtering.test.ts` | 191 | Test | 18 tests — F1–F4 filtering unit tests |
+| `src/lib/integration.test.ts` | 113 | Test | 10 tests — F5, duration/overlap boundaries, pipeline |
+
+**Config and documentation files in project root (12 files):**
+
+| File | Purpose |
+|---|---|
+| `package.json` | Dependencies and npm scripts |
+| `package-lock.json` | Locked dependency versions |
+| `vite.config.ts` | Vite build config with `@` alias |
+| `vitest.config.ts` | Vitest config (node env, `src/**/*.test.ts`) |
+| `tsconfig.json` | TypeScript project root config |
+| `tsconfig.app.json` | TypeScript app config |
+| `tsconfig.node.json` | TypeScript node config |
+| `eslint.config.js` | ESLint flat config |
+| `postcss.config.js` | PostCSS config for Tailwind |
+| `tailwind.config.js` | Tailwind CSS config |
+| `index.html` | HTML entry point |
+| `.gitignore` | Git ignore rules |
+
+**Documentation files (5 files):**
+
+| File | Purpose |
+|---|---|
+| `BASELINE.md` | Pre-assignment baseline metrics |
+| `README.md` | Project documentation |
+| `ANALYSIS_REPORT.md` | Task 01 and Task 03 analysis |
+| `AI_EVIDENCE.md` | AI usage evidence and reflection |
+| `TEST_RESULTS.txt` | Real terminal output from test/typecheck/lint/build |
+
 ### Original acceptance criteria (AC1–AC6)
 
 No original assignment specification document is present in the repository.
