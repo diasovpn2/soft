@@ -12,9 +12,24 @@ export interface Room {
   name: string;
   building: string;
   capacity: number;
+  equipment: string[];
   blocked: boolean;
   blockedReason?: string;
 }
+
+export interface EquipmentOption {
+  value: string;
+  label: string;
+}
+
+export const EQUIPMENT_OPTIONS: EquipmentOption[] = [
+  { value: 'projector', label: 'Projector' },
+  { value: 'whiteboard', label: 'Whiteboard' },
+  { value: 'video-conf', label: 'Video Conferencing' },
+  { value: 'audio-system', label: 'Audio System' },
+  { value: 'smart-board', label: 'Smart Board' },
+  { value: 'pcs', label: 'Computers' },
+];
 
 export const rooms: Room[] = [
   {
@@ -22,6 +37,7 @@ export const rooms: Room[] = [
     name: 'Lecture Hall Alpha',
     building: 'Engineering Block',
     capacity: 120,
+    equipment: ['projector', 'audio-system', 'video-conf'],
     blocked: false,
   },
   {
@@ -29,6 +45,7 @@ export const rooms: Room[] = [
     name: 'Seminar Room Beta',
     building: 'Science Wing',
     capacity: 30,
+    equipment: ['whiteboard', 'projector'],
     blocked: false,
   },
   {
@@ -36,6 +53,7 @@ export const rooms: Room[] = [
     name: 'Computer Lab Gamma',
     building: 'IT Tower',
     capacity: 40,
+    equipment: ['pcs', 'smart-board', 'audio-system'],
     blocked: true,
     blockedReason: 'Under maintenance until 18:00',
   },
@@ -44,6 +62,7 @@ export const rooms: Room[] = [
     name: 'Discussion Room Delta',
     building: 'Library Annex',
     capacity: 12,
+    equipment: ['whiteboard'],
     blocked: false,
   },
 ];

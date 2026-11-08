@@ -14,6 +14,7 @@ const openRoom: Room = {
   name: 'Lecture Hall Alpha',
   building: 'Engineering Block',
   capacity: 120,
+  equipment: [],
   blocked: false,
 };
 
@@ -22,6 +23,7 @@ const blockedRoom: Room = {
   name: 'Computer Lab Gamma',
   building: 'IT Tower',
   capacity: 40,
+  equipment: [],
   blocked: true,
   blockedReason: 'Under maintenance until 18:00',
 };

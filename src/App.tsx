@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
   XCircle,
@@ -7,16 +7,26 @@ import {
   Users,
   MapPin,
   CalendarCheck,
+  Monitor,
+  Search,
 } from 'lucide-react';
-import { bookings as seedBookings, rooms, Room } from '@/data/campus';
+import {
+  bookings as seedBookings,
+  rooms,
+  Room,
+  EQUIPMENT_OPTIONS,
+} from '@/data/campus';
 import { checkAvailability } from '@/lib/availability';
+import {
+  filterAvailableRooms,
+} from '@/lib/filtering';
 import {
   minutesToTime,
   nowHHMM,
   timeToMinutes,
 } from '@/lib/time';
+import { MAX_BOOKING_DURATION } from '@/lib/validation';
 
-const MAX_DURATION = 120;
 const MAX_MINUTES = 1440;
 
 export default function App() {
@@ -28,6 +38,10 @@ export default function App() {
   const [verdict, setVerdict] = useState<ReturnType<
     typeof checkAvailability
   > | null>(null);
+
+  // Room-finder state
+  const [attendees, setAttendees] = useState<string>('');
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
 
   const selectedRoom: Room | null = useMemo(
     () => rooms.find((r) => r.code === roomCode) ?? null,
@@ -41,6 +55,34 @@ export default function App() {
         .sort((a, b) => a.start - b.start),
     [bookings, roomCode]
   );
+
+  const minCapacity = (() => {
+    const n = Number(attendees);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  })();
+
+  const matchingRooms = useMemo(
+    () => filterAvailableRooms(rooms, minCapacity, selectedEquipment),
+    [minCapacity, selectedEquipment]
+  );
+
+  // Refresh availability result when the selected room changes — clear the
+  // stale verdict so the user doesn't see a result for the old room.
+  useEffect(() => {
+    setVerdict(null);
+  }, [roomCode]);
+
+  function toggleEquipment(value: string) {
+    setSelectedEquipment((prev) =>
+      prev.includes(value)
+        ? prev.filter((e) => e !== value)
+        : [...prev, value]
+    );
+  }
+
+  function pickRoom(code: string) {
+    setRoomCode(code);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,6 +114,8 @@ export default function App() {
     setEndStr('');
     setCurrentTimeStr(nowHHMM());
     setVerdict(null);
+    setAttendees('');
+    setSelectedEquipment([]);
   }
 
   const durationLabel =
@@ -97,11 +141,122 @@ export default function App() {
                 Smart Campus Room Availability
               </h1>
               <p className="text-sm text-slate-500">
-                Check whether a room is free for your proposed time slot.
+                Find a room that fits your needs and check whether it is free.
               </p>
             </div>
           </div>
         </header>
+
+        {/* Room finder */}
+        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-base font-semibold">
+            <Search size={18} className="text-slate-400" /> Find a room
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Minimum attendees
+              </label>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                placeholder="e.g. 25"
+                value={attendees}
+                onChange={(e) => setAttendees(e.target.value)}
+                className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            <div>
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                Equipment
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {EQUIPMENT_OPTIONS.map((opt) => {
+                  const active = selectedEquipment.includes(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleEquipment(opt.value)}
+                      className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+                        active
+                          ? 'border-blue-600 bg-blue-600 text-white'
+                          : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              {matchingRooms.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
+                  <p className="text-sm text-slate-500">
+                    No rooms match your filters.
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Try reducing the attendee count or removing equipment
+                    requirements.
+                  </p>
+                </div>
+              ) : (
+                <ul className="grid gap-3 sm:grid-cols-2">
+                  {matchingRooms.map((r) => {
+                    const isActive = r.code === roomCode;
+                    return (
+                      <li key={r.code}>
+                        <button
+                          type="button"
+                          onClick={() => pickRoom(r.code)}
+                          className={`w-full rounded-xl border p-4 text-left transition ${
+                            isActive
+                              ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-100'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-slate-900">
+                              {r.code} — {r.name}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                              <Users size={12} /> {r.capacity}
+                            </span>
+                          </div>
+                          <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                            <MapPin size={12} /> {r.building}
+                          </div>
+                          {r.equipment.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {r.equipment.map((eq) => {
+                                const label =
+                                  EQUIPMENT_OPTIONS.find(
+                                    (o) => o.value === eq
+                                  )?.label ?? eq;
+                                return (
+                                  <span
+                                    key={eq}
+                                    className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600"
+                                  >
+                                    <Monitor size={10} /> {label}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </section>
 
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Form */}
@@ -139,6 +294,23 @@ export default function App() {
                         {selectedRoom.blockedReason}
                       </span>
                     )}
+                  </div>
+                )}
+                {selectedRoom && selectedRoom.equipment.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {selectedRoom.equipment.map((eq) => {
+                      const label =
+                        EQUIPMENT_OPTIONS.find((o) => o.value === eq)?.label ??
+                        eq;
+                      return (
+                        <span
+                          key={eq}
+                          className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600"
+                        >
+                          <Monitor size={10} /> {label}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -186,7 +358,7 @@ export default function App() {
                   className={`text-xs ${
                     durationLabel < 0
                       ? 'text-rose-600'
-                      : durationLabel > MAX_DURATION
+                      : durationLabel > MAX_BOOKING_DURATION
                       ? 'text-rose-600'
                       : 'text-slate-500'
                   }`}
@@ -195,7 +367,9 @@ export default function App() {
                   {durationLabel < 0
                     ? 'end before start'
                     : `${durationLabel} min${
-                        durationLabel > MAX_DURATION ? ' (exceeds 120)' : ''
+                        durationLabel > MAX_BOOKING_DURATION
+                          ? ` (exceeds ${MAX_BOOKING_DURATION})`
+                          : ''
                       }`}
                 </p>
               )}
