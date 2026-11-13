@@ -24,10 +24,9 @@ import {
   minutesToTime,
   nowHHMM,
   timeToMinutes,
+  MINUTES_IN_DAY,
 } from '@/lib/time';
 import { MAX_BOOKING_DURATION } from '@/lib/validation';
-
-const MAX_MINUTES = 1440;
 
 export default function App() {
   const [bookings] = useState(seedBookings);
@@ -485,7 +484,7 @@ export default function App() {
         </section>
 
         <footer className="mt-6 text-center text-xs text-slate-400">
-          Sample data only · Times use a 24-hour clock (00:00–{minutesToTime(MAX_MINUTES)} = 24:00 boundary)
+          Sample data only · Times use a 24-hour clock (00:00–{minutesToTime(MINUTES_IN_DAY - 1)}–24:00 boundary)
         </footer>
       </div>
     </div>
